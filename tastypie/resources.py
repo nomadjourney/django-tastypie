@@ -1116,7 +1116,9 @@ class Resource(object):
 
         # Optionally apply sorting if it is allowed for any fields
         if len(self._meta.ordering):
-            objects = self.apply_sorting(objects, options=request.GET)
+            sorted_objects = self.apply_sorting(objects, options=request.GET)
+        else:
+            sorted_objects = objects
         
         paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
         to_be_serialized = paginator.page()
