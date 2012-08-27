@@ -3,7 +3,8 @@ from django.http import HttpRequest
 from django.contrib.auth.models import User, Permission
 from core.models import Note
 from tastypie.authorization import Authorization, ReadOnlyAuthorization, DjangoAuthorization
-from tastypie.resources import ModelResource
+from tastypie import fields
+from tastypie.resources import Resource, ModelResource
 
 
 class NoRulesNoteResource(ModelResource):
@@ -24,6 +25,19 @@ class DjangoNoteResource(ModelResource):
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.filter(is_active=True)
+        authorization = DjangoAuthorization()
+
+
+class NotAModel(object):
+    name = 'Foo'
+
+
+class NotAModelResource(Resource):
+    name = fields.CharField(attribute='name')
+
+    class Meta:
+        resource_name = 'notamodel'
+        object_class = NotAModel
         authorization = DjangoAuthorization()
 
 
@@ -54,6 +68,7 @@ class DjangoAuthorizationTestCase(TestCase):
         self.change = Permission.objects.get_by_natural_key('change_note', 'core', 'note')
         self.delete = Permission.objects.get_by_natural_key('delete_note', 'core', 'note')
         self.user = User.objects.all()[0]
+        self.user.user_permissions.clear()
 
     def test_no_perms(self):
         # sanity check: user has no permissions
@@ -103,6 +118,43 @@ class DjangoAuthorizationTestCase(TestCase):
         request.user.user_permissions.add(self.add)
         request.user.user_permissions.add(self.change)
         request.user.user_permissions.add(self.delete)
-        for method in ('GET', 'POST', 'PUT', 'DELETE'):
+
+        for method in ('GET', 'OPTIONS', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH'):
             request.method = method
             self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+    def test_not_a_model(self):
+        request = HttpRequest()
+        request.user = self.user
+
+        # give add permission
+        request.user.user_permissions.add(self.add)
+        request.method = 'POST'
+        self.assertTrue(NotAModelResource()._meta.authorization.is_authorized(request))
+
+    def test_patch_perms(self):
+        request = HttpRequest()
+        request.user = self.user
+        request.method = 'PATCH'
+
+        # Not enough.
+        request.user.user_permissions.add(self.add)
+        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+        # Still not enough.
+        request.user.user_permissions.add(self.change)
+        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+        # Much better.
+        request.user.user_permissions.add(self.delete)
+        # Nuke the perm cache. :/
+        del request.user._perm_cache
+        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+    def test_unrecognized_method(self):
+        request = HttpRequest()
+        request.user = self.user
+
+        # Check a non-existent HTTP method.
+        request.method = 'EXPLODE'
+        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))

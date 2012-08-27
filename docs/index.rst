@@ -7,13 +7,16 @@ interfaces.
 
 .. toctree::
    :maxdepth: 2
-   
+
    tutorial
    interacting
    settings
    non_orm_data_sources
-   
+   tools
+   testing
+
    resources
+   bundles
    api
    fields
    caching
@@ -21,10 +24,13 @@ interfaces.
    authentication_authorization
    serialization
    throttling
-   
+   paginator
+   geodjango
+
    cookbook
    debugging
    who_uses
+   contributing
 
 
 Getting Help
@@ -48,21 +54,21 @@ Quick Start
 
     from tastypie.resources import ModelResource
     from my_app.models import MyModel
-    
-    
+
+
     class MyModelResource(ModelResource):
         class Meta:
             queryset = MyModel.objects.all()
             allowed_methods = ['get']
 
 4. In your root URLconf, add the following code (around where the admin code might be)::
-    
+
     from tastypie.api import Api
     from my_app.api.resources import MyModelResource
-    
+
     v1_api = Api(api_name='v1')
     v1_api.register(MyModelResource())
-    
+
     urlpatterns = patterns('',
       # ...more URLconf bits here...
       # Then add:
@@ -78,19 +84,92 @@ Requirements
 Tastypie requires the following modules. If you use Pip_, you can install
 the necessary bits via the included ``requirements.txt``:
 
-* Python 2.4+
-* Django 1.0+
+Required
+--------
+
+* Python 2.6+
+* Django 1.3+
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
 
-* dateutil (http://labix.org/python-dateutil)
-* lxml (http://codespeak.net/lxml/) if using the XML serializer
+* dateutil (http://labix.org/python-dateutil) >= 1.5, < 2.0
+
+Optional
+--------
+
+* python_digest (https://bitbucket.org/akoha/python-digest/)
+* lxml (http://lxml.de/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
-
-If you choose to use Python 2.4, be warned that you will also need to grab the
-following modules:
-
-* uuid (present in 2.5+, downloadable from http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
+* biplist (http://explorapp.com/biplist/) if using the binary plist serializer
 
 .. _Pip: http://pip.openplans.org/
+
+
+Why Tastypie?
+=============
+
+There are other, better known API frameworks out there for Django. You need to
+assess the options available and decide for yourself. That said, here are some
+common reasons for tastypie.
+
+* You need an API that is RESTful and uses HTTP well.
+* You want to support deep relations.
+* You DON'T want to have to write your own serializer to make the output right.
+* You want an API framework that has little magic, very flexible and maps well to
+  the problem domain.
+* You want/need XML serialization that is treated equally to JSON (and YAML is
+  there too).
+* You want to support my perceived NIH syndrome, which is less about NIH and more
+  about trying to help out friends/coworkers.
+
+
+Reference Material
+==================
+
+* http://github.com/toastdriven/django-tastypie/tree/master/tests/basic shows
+  basic usage of tastypie
+* http://en.wikipedia.org/wiki/REST
+* http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+* http://www.ietf.org/rfc/rfc2616.txt
+* http://jacobian.org/writing/rest-worst-practices/
+
+
+Running The Tests
+=================
+
+The easiest way to get setup to run Tastypie's tests looks like::
+
+  $ git clone https://github.com/toastdriven/django-tastypie.git
+  $ cd django-tastypie
+  $ virtualenv env
+  $ . env/bin/activate
+  $ ./env/bin/pip install -U -r requirements.txt
+
+Then running the tests is as simple as::
+
+  # From the same directory as above:
+  $ ./env/bin/pip install -U -r tests/requirements.txt
+  $ cd tests
+  $ ./run_all_test.sh
+
+Tastypie is maintained with all tests passing at all times. If you find a
+failure, please `report it`_ along with the versions of the installed software.
+
+.. _`report it`: https://github.com/toastdriven/django-tastypie/issues
+
+
+Commercial Support
+==================
+
+If you're using Tastypie in a commercial environment, paid support is available
+from `Toast Driven`_. Services offered include:
+
+* Advice/help with setup
+* Implementation in your project
+* Bugfixes in Tastypie itself
+* Features in Tastypie itself
+
+If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
+
+.. _`Toast Driven`: http://toastdriven.com/
